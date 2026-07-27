@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ENGLISH GRAMMAR SNIPER</title>
+<style>
+  :root { --rouge: #DC2626; --bleu: #2563EB; --vert: #16A34A; --or: #FACC15; --bg: #FEF2F2; --noir: #1E293B; }
+    * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', sans-serif; }
+  body { background: var(--bg); padding-bottom: 90px; }
+.header { background: linear-gradient(135deg, var(--rouge), var(--bleu)); color: white; text-align: center; padding: 25px; border-bottom: 5px solid var(--or); }
+.header h1 { font-size: 22px; }
+.score { font-size: 18px; margin-top: 5px; font-weight: 900; }
+.container { padding: 20px; max-width: 800px; margin: auto; }
+.card { background: white; border: 3px solid var(--or); border-radius: 20px; padding: 25px; margin-bottom: 20px; }
+.topic-btn { padding: 18px; background: white; border: 3px solid var(--bleu); border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; width: 100%; margin-bottom: 12px; text-align: left; }
+.topic-btn:hover { background: var(--bleu); color: white; }
+.question-box { background: var(--bg); padding: 25px; border-radius: 15px; border: 3px solid var(--rouge); margin: 15px 0; font-size: 20px; }
+.option { padding: 15px; background: white; border: 3px solid var(--bleu); border-radius: 12px; margin: 10px 0; cursor: pointer; font-weight: 700; font-size: 17px; transition: all 0.3s; }
+.option:hover { background: var(--or); transform: scale(1.02); }
+.option.correct { background: var(--vert); color: white; border-color: var(--vert); }
+.option.wrong { background: var(--rouge); color: white; border-color: var(--rouge); }
+.option.disabled { pointer-events: none; opacity: 0.7; }
+.explication { background: #FEF3C7; border-left: 5px solid var(--or); padding: 15px; border-radius: 10px; margin-top: 15px; display: none; animation: fadeIn 0.5s; }
+@keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+.btn { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--rouge), var(--bleu)); color: white; border: none; border-radius: 15px; font-weight: 900; font-size: 16px; cursor: pointer; margin-top: 10px; }
+.timer { font-size: 24px; font-weight: 900; color: var(--rouge); text-align: center; }
+.footer { position: fixed; bottom: 0; left: 0; right: 0; background: var(--noir); color: var(--or); text-align: center; padding: 15px; font-weight: 900; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎯 ENGLISH GRAMMAR SNIPER</h1>
+  <p>1ère A & Terminale A - Ne perds plus de points</p>
+  <div class="score">Score: <span id="score">0</span>/20 | Questions: <span id="qNum">1</span>/10</div>
+</div>
+
+<div class="container">
+
+  <div class="card" id="menu">
+    <h2>🎯 CHOISIS TON THÈME FAIBLE</h2>
+    <button class="topic-btn" onclick="startQuiz('tenses')">1. TENSES - Les Temps<br><small>Present, Past, Future, Continuous</small></button>
+    <button class="topic-btn" onclick="startQuiz('conditionals')">2. CONDITIONALS - Si...<br><small>Type 0, 1, 2, 3</small></button>
+    <button class="topic-btn" onclick="startQuiz('passive')">3. PASSIVE VOICE - Voix Passive<br><small>is done, was written</small></button>
+    <button class="topic-btn" onclick="startQuiz('exam')">🔥 EXAMEN BLANC 20MIN<br><small>10 questions mélangées type BAC</small></button>
+  </div>
+
+  <div class="card" id="quiz" style="display:none;">
+    <div class="timer" id="timer"></div>
+    <h2 id="quizTitle"></h2>
+    <div class="question-box" id="questionBox"></div>
+    <div id="optionsBox"></div>
+    <div class="explication" id="explicationBox"></div>
+    <button class="btn" id="nextBtn" onclick="nextQuestion()" style="display:none;">QUESTION SUIVANTE →</button>
+  </div>
+
+</div>
+
+<div class="footer">
+  GRAMMAR SNIPER | 18/20 AU BAC 🤴
+</div>
+
+<script>
+let score = 0;
+let qNum = 0;
+let currentTopic = 'tenses';
+let timerInterval;
+let answered = false; // NOUVEAU: pour bloquer les double-clics
+
+const questions = {
+  tenses: [
+    {
+      q: "She _____ to school every day.",
+      options: ["go", "goes", "going", "went"],
+      answer: 1,
+      expli: "RÈGLE: Present Simple. 3ème personne 'he/she/it' prend 's'. She goes."
+    },
+    {
+      q: "I _____ my homework when you called me.",
+      options: ["do", "did", "was doing", "have done"],
+      answer: 2,
+      expli: "RÈGLE: Past Continuous. Action en cours dans le passé. was/were + verb+ing"
+    },
+    {
+      q: "They _____ in Abidjan since 2020.",
+      options: ["live", "are living", "have lived", "lived"],
+      answer: 2,
+      expli: "RÈGLE: Present Perfect + 'since'. Action commencée dans le passé et continue."
+    }
+  ],
+  conditionals: [
+    {
+      q: "If I _____ rich, I would buy a car.",
+      options: ["am", "was", "were", "be"],
+      answer: 2,
+      expli: "RÈGLE: Conditional Type 2. If + Past Simple, would + base verb. 'were' pour tout le monde."
+    },
+    {
+      q: "If it rains tomorrow, we _____ at home.",
+      options: ["stay", "will stay", "would stay", "stayed"],
+      answer: 1,
+      expli: "RÈGLE: Conditional Type 1. If + Present, will + base verb. Futur possible."
+    }
+  ],
+  passive: [
+    {
+      q: "The letter _____ by my brother yesterday.",
+      options: ["wrote", "was written", "is written", "has written"],
+      answer: 1,
+      expli: "RÈGLE: Passive Past Simple. was/were + past participle. 'yesterday' = passé."
+    },
+    {
+      q: "English _____ in many countries.",
+      options: ["speaks", "is spoken", "was spoken", "has spoken"],
+      answer: 1,
+      expli: "RÈGLE: Passive Present Simple. is/are + past participle. Vérité générale."
+    }
+  ],
+  exam: []
+};
+
+questions.exam = [...questions.tenses,...questions.conditionals,...questions.passive].sort(() => 0.5 - Math.random()).slice(0, 10);
+
+function startQuiz(topic) {
+  document.getElementById('menu').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  currentTopic = topic;
+  qNum = 0;
+  score = 0;
+  document.getElementById('score').innerText = score;
+  loadQuestion();
+  if(topic === 'exam') startTimer(20 * 60);
+}
+
+function startTimer(seconds) {
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    let min = Math.floor(seconds / 60);
+    let sec = seconds % 60;
+    document.getElementById('timer').innerText = `⏰ ${min}:${sec < 10? '0' : ''}${sec}`;
+    if(seconds <= 0) {
+      clearInterval(timerInterval);
+      alert(`⏰ TEMPS ÉCOULÉ! Score final: ${score}/20`);
+      reset();
+    }
+    seconds--;
+  }, 1000);
+}
+
+function loadQuestion() {
+  answered = false; // Reset
+  const quizQuestions = questions[currentTopic];
+  if(qNum >= quizQuestions.length) {
+    clearInterval(timerInterval);
+    alert(`🎉 FINI! Score: ${score}/${quizQuestions.length * 2}`);
+    reset();
+    return;
+  }
+
+  const q = quizQuestions[qNum];
+  document.getElementById('quizTitle').innerText = `Question ${qNum + 1}`;
+  document.getElementById('qNum').innerText = qNum + 1;
+  document.getElementById('questionBox').innerText = q.q;
+
+  let optionsHtml = '';
+  q.options.forEach((opt, i) => {
+    optionsHtml += `<div class="option" data-index="${i}">${opt}</div>`;
+  });
+  document.getElementById('optionsBox').innerHTML = optionsHtml;
+
+  // NOUVEAU: On ajoute l'event listener après avoir créé le HTML
+  document.querySelectorAll('.option').forEach((opt, i) => {
+    opt.addEventListener('click', () => checkAnswer(i, q.answer, opt, q.expli));
+  });
+
+  document.getElementById('explicationBox').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+}
+
+function checkAnswer(selected, correct, element, expli) {
+  if(answered) return; // Bloquer si déjà répondu
+  answered = true;
+
+  // Désactiver toutes les options
+  document.querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+
+  if(selected === correct) {
+    element.classList.add('correct');
+    score += 2;
+    document.getElementById('score').innerText = score;
+    new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3').play(); // Son correct
+  } else {
+    element.classList.add('wrong');
+    document.querySelectorAll('.option')[correct].classList.add('correct');
+    new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3').play(); // Son erreur
+  }
+
+  document.getElementById('explicationBox').style.display = 'block';
+  document.getElementById('explicationBox').innerHTML = `<b>📚 EXPLICATION:</b> ${expli}`;
+  document.getElementById('nextBtn').style.display = 'block';
+}
+
+function nextQuestion() {
+  qNum++;
+  loadQuestion();
+}
+
+function reset() {
+  document.getElementById('menu').style.display = 'block';
+  document.getElementById('quiz').style.display = 'none';
+  clearInterval(timerInterval);
+}
+</script>
+</body>
+  </html>
